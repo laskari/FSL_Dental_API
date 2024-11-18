@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, UploadFile, FastAPI, File, UploadFile, Form, HTTPException
-
+import sys
 from fastapi.responses import JSONResponse, FileResponse
 from typing import Annotated, Optional, List
 
@@ -126,5 +126,6 @@ async def ml_extraction(data: dict):
         )
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", host="10.115.58.137", port=8002)
+    port = int(sys.args[1]) if  len(sys.args) > 1 else 8000
+    uvicorn.run("app:app", host="0.0.0.0", port=port)
 
