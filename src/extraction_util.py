@@ -19,6 +19,7 @@ import os
 import warnings
 from tqdm import tqdm
 from config import *
+from src.logger import log_message
 
 
 warnings.filterwarnings('ignore')
@@ -151,14 +152,17 @@ def run_prediction_donut(image, model, processor):
     return prediction, outputs, scores
 
 def split_and_expand(row):
-    if row['Key'] == "33_Missing_Teeth":
-        keys = [row['Key']]
-        values = row['Value'].split(';')[0]
-    else:
-        keys = [row['Key']] * len(row['Value'].split(';'))
-        values = row['Value'].split(';')
-    return pd.DataFrame({'Key': keys, 'Value': values})
-
+    try:
+        if row['Key'] == "33_Missing_Teeth":
+            keys = [row['Key']]
+            values = row['Value'].split(';')[0]
+        else:
+            keys = [row['Key']] * len(row['Value'].split(';'))
+            values = row['Value'].split(';')
+        return pd.DataFrame({'Key': keys, 'Value': values})
+    except Exception as e:
+        log_message(f"Error while splitting {e}", level="ERROR")
+        raise e
 
 def load_model(device):
     try:
@@ -201,7 +205,7 @@ def calculate_key_aggregated_scores(scores, outputs, processor):
         # Detect the start of a new key
         if token.startswith("<s_") and not token.startswith("</"):
 
-            print(f"Start of the token {token}")
+            # print(f"Start of the token {token}")
             # Start a new key; reset token scores.
             # From a text remove <s_ and >
             current_key = token[3:-1]
@@ -212,7 +216,7 @@ def calculate_key_aggregated_scores(scores, outputs, processor):
         # Detect the end of the current key
         elif token.startswith("</") and current_key is not None:
 
-            print(f"End of the token {token}")
+            # print(f"End of the token {token}")
             # Compute the aggregated score for the key
             if token_scores:
                 product_of_scores = math.prod(token_scores)
@@ -230,7 +234,7 @@ def calculate_key_aggregated_scores(scores, outputs, processor):
 
             # Handle row separators
             if token == ";":
-                print("Calculating Intermedeate")
+                # print("Calculating Intermedeate")
                 # Calculate and store the score for the current row
                 if token_scores:
                     product_of_scores = math.prod(token_scores)
@@ -239,8 +243,8 @@ def calculate_key_aggregated_scores(scores, outputs, processor):
                     token_scores = []  # Reset token scores for the next row
             elif not token.startswith("<") and not token.startswith("</"):
                 # Include the score for intermediate tokens
-                print(processor.tokenizer.decode([token_id.item()], skip_special_tokens=False))
-                print(max_score)
+                # print(processor.tokenizer.decode([token_id.item()], skip_special_tokens=False))
+                # print(max_score)
                 token_scores.append(max_score)
 
         # elif current_key is not None:
@@ -260,13 +264,17 @@ def convert_predictions_to_df(prediction, key_aggregated_scores):
     expanded_df = pd.DataFrame()
     result_df_each_image = pd.DataFrame()    
     each_image_output = pd.DataFrame(list(prediction.items()), columns=["Key", "Value"])
-    each_image_output["Aggregated_Score"] = each_image_output["Key"].map(key_aggregated_scores)
+    # each_image_output["confidence_score"] = each_image_output["Key"].map(key_aggregated_scores)
 
-    try:    
-        expanded_df = pd.DataFrame(columns=["Key", "Value", "Aggregated_Score"])
+    # print("each_image_output --->>>", prediction)
+    # print("each_image_output isna --->>>", each_image_output[each_image_output["Value"].isna()])
+    # print("empty_string_rows --->>>>", each_image_output[each_image_output["Value"] == ""])
+
+    try:
+        expanded_df = pd.DataFrame(columns=["Key", "Value"])
         for index, row in each_image_output[each_image_output["Value"].str.contains(";")].iterrows():
             expanded_rows = pd.DataFrame(split_and_expand(row))  # Expand rows
-            expanded_rows["Aggregated_Score"] = key_aggregated_scores[row["Key"]]  # Assign the same score sum
+            # expanded_rows["confidence_score"] = key_aggregated_scores[row["Key"]]  # Assign the same score sum
             expanded_df = pd.concat([expanded_df, expanded_rows], ignore_index=True)
 
         result_df_each_image = pd.concat([each_image_output, expanded_df], ignore_index=True)
@@ -274,7 +282,7 @@ def convert_predictions_to_df(prediction, key_aggregated_scores):
         result_df_each_image = result_df_each_image.replace("<one>", "1")
     except Exception as e:
         print("Error in convert_predictions_to_df--->>>>", e)
-        pass
+        raise e
     return result_df_each_image
 
 def map_result1(dict1, dict2):
@@ -298,7 +306,7 @@ def map_result2(dict1, dict2):
                 }
     return result_dict_2
 
-def map_result1_final_output(result_dict_1, additional_info_dict):
+def map_result1_final_output(result_dict_1, additional_info_dict, key_aggregated_scores):
     updated_result_dict_1 = {}
 
     # Iterate over additional_info_dict
@@ -309,9 +317,18 @@ def map_result1_final_output(result_dict_1, additional_info_dict):
         else:
             # If the key is missing in result_dict_1, set coordinates to None
             coordinates = None
+        
+        if key in key_aggregated_scores:
+            confidence_score = key_aggregated_scores[key]
+        else:
+            confidence_score = None
 
         # Store the coordinates and additional_info in updated_result_dict_1
-        updated_result_dict_1[key] = {"coordinates": coordinates, "text": additional_info}
+        updated_result_dict_1[key] = {
+            "coordinates": coordinates, 
+            "text": additional_info, 
+            "confidence_score" : confidence_score
+        }
 
     return updated_result_dict_1
 
@@ -332,7 +349,7 @@ def run_ada_pipeline(image_path: str):
         # Calculate key aggregated scores
         key_aggregated_scores = calculate_key_aggregated_scores(scores, output, processor)
 
-        print("key_aggregated_scores --->>>> ", key_aggregated_scores)
+        # print("key_aggregated_scores --->>>> ", key_aggregated_scores)
         donut_out = convert_predictions_to_df(prediction, key_aggregated_scores)
         
         # This is just converting the dataframe to dictionary
@@ -346,7 +363,7 @@ def run_ada_pipeline(image_path: str):
         for item in data_list:
             key = item['Key']
             value = item['Value']   
-            # score = 
+            # score = item['confidence_score']
 
             # Check if the key already exists in the output dictionary
             if key in output_dict_donut:
@@ -373,7 +390,7 @@ def run_ada_pipeline(image_path: str):
         # Map the ROI keys with the Donut keys
         result_dict_1 = map_result1(output_dict_det, BBOX_DONUT_Mapping_Dict)
         # result_dict_2 = map_result2(output_dict_det, BBOX_DONUT_Mapping_Dict)
-        final_mapping_dict  = map_result1_final_output(result_dict_1, output_dict_donut)
+        final_mapping_dict  = map_result1_final_output(result_dict_1, output_dict_donut, key_aggregated_scores)
 
         return {"result": final_mapping_dict}, None
     except Exception as e:
