@@ -126,6 +126,6 @@ async def ml_extraction(data: dict):
         )
 
 if __name__ == '__main__':
-    port = int(sys.args[1]) if  len(sys.args) > 1 else 8000
+    port = int(sys.argv[1]) if  len(sys.argv) > 1 else 8000
     uvicorn.run("app:app", host="0.0.0.0", port=port)
 
