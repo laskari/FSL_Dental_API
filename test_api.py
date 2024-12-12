@@ -5,7 +5,7 @@ url = "http://0.0.0.0:8000/ada_extraction"
 # Define the payload data as a dictionary
 data = {
    # "FilePath": r"/Data/FSL_prod_codebase/FSL_codebase/api/ADA/images/2025I4A9D015_001.tiff"
-    "FilePath": "/Data/FSL_codebase/FSL_Dental_API/artifacts/2027C43AD012_001.tiff"
+    "FilePath": r"D:\project\FSL\FSL_codebase\api\ADA\images\2027C43AD010_001.jpg"
 }
 
 try:
@@ -22,8 +22,15 @@ try:
     # Check if the request was successful (status code 200)
     if response.status_code == 200:
         # Print the response content
-        print("Response:", response.json())
+        response_data = response.json()
+        print("Response:", response_data)
         print("Request was successful.")
+
+        with open(fr"""2027C43AD010_001.json""", "w") as json_file:
+            import json
+            json.dump(response_data, json_file, indent=4)  # indent=4 makes the JSON file human-readable
+            print("Response saved to 'response.json'")
+
     else:
         # If request was not successful, print error message
         print("Error:", response.content)
