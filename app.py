@@ -13,7 +13,7 @@ from src.logger import log_message, setup_logger
 from config import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logger = setup_logger(LOGFILE_DIR)
+logger, formatter = setup_logger(LOGFILE_DIR)
 app = FastAPI()
 
 @app.get("/")
@@ -24,6 +24,9 @@ async def root_route():
 async def ml_extraction(data: dict):
     try:
         # Log start of the extraction
+        XELP_process_request = 'XELP_process_request'
+        formatter.start_timing(XELP_process_request)
+
         log_message(logger, "Started ml_extraction", level="INFO")
         # Get the image path from the payload
         image_file_path = data.get('FilePath')
@@ -39,20 +42,21 @@ async def ml_extraction(data: dict):
         log_message(logger, f"File found: {image_file_path}. Running pipeline...", level="INFO")
 
         # Run the pipeline and capture result and error
-        result, error = run_ada_pipeline(image_file_path)
+        result, error = run_ada_pipeline(image_file_path, logger, formatter)
 
         if error:
             # Log the error before raising HTTPException
             log_message(logger, f"Error in pipeline: {error}", level="ERROR")
             raise HTTPException(status_code=500, detail=error)
 
-        log_message(logger, "Pipeline ran successfully", level="INFO")
-
+        # log_message(logger, "Pipeline ran successfully", level="INFO")
         # If there's no error, return the result with file path
         response_data = {"file_path": data.get('FilePath'), "result": result['result']}
         
-        # Log the successful result
-        log_message(logger, f"Extraction result: {response_data}", level="INFO")
+        # log_message(logger, f"Extraction result: {response_data}", level="INFO")
+        overall_elapsed_time = formatter.stop_timing(XELP_process_request)
+
+        log_message(logger, f"The pipeline process completed with Data extraction and ROI prediction", level="DEBUG", elapsed_time=overall_elapsed_time)
         return JSONResponse(content=response_data)
 
     except Exception as e:

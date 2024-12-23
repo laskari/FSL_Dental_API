@@ -1,6 +1,6 @@
 import os
-#ROOT = os.getcwd()
-ROOT = "/Data/FSL_codebase/FSL_Dental_API"
+ROOT = os.getcwd()
+# ROOT = "/Data/FSL_codebase/FSL_Dental_API"
 LOG_DIR = "logs"
 LOG_FILE = "ada_logs.log"
 artifact_path = 'artifacts'
