@@ -1,6 +1,6 @@
 import requests
 import time
-url = "http://0.0.0.0:8000/ada_extraction"
+url = "http://localhost:8000/ada_extraction"
 
 # Define the payload data as a dictionary
 data = {

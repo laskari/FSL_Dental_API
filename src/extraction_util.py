@@ -260,7 +260,7 @@ def calculate_key_aggregated_scores(scores, outputs, processor):
     return key_aggregated_scores
 
 
-def convert_predictions_to_df(prediction, key_aggregated_scores):
+def convert_predictions_to_df(prediction):
     expanded_df = pd.DataFrame()
     result_df_each_image = pd.DataFrame()    
     each_image_output = pd.DataFrame(list(prediction.items()), columns=["Key", "Value"])
@@ -350,7 +350,7 @@ def run_ada_pipeline(image_path: str):
         key_aggregated_scores = calculate_key_aggregated_scores(scores, output, processor)
 
         # print("key_aggregated_scores --->>>> ", key_aggregated_scores)
-        donut_out = convert_predictions_to_df(prediction, key_aggregated_scores)
+        donut_out = convert_predictions_to_df(prediction)
         
         # This is just converting the dataframe to dictionary
         json_data = donut_out.to_json(orient='records')
