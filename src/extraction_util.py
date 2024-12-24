@@ -337,19 +337,31 @@ processor, model = load_model(device)
 
 
 
-def run_ada_pipeline(image_path: str):
+def run_ada_pipeline(image_path: str, logger, formatter):
     try:
         # image_path = os.path.join(input_image_folder, each_image)
+        image_reading = "Image_reading"
+        formatter.start_timing(image_reading)
+        # log_message(logger, "Image_reading Started", level="INFO")
         pil_image = Image.open(image_path).convert('RGB')
         # pil_image = Image.open(io.BytesIO(image_path)).convert('RGB')
         to_tensor = transforms.ToTensor()
         image = to_tensor(pil_image)
+        im_read_time = formatter.stop_timing(image_reading)
+        log_message(logger, "Image_reading Completed", level="INFO", elapsed_time=im_read_time)
+        
+        Data_extraction = "Data Extraction"
+        formatter.start_timing(Data_extraction)
         prediction, output, scores = run_prediction_donut(pil_image, model, processor)
 
         # Calculate key aggregated scores
         key_aggregated_scores = calculate_key_aggregated_scores(scores, output, processor)
-
+        data_extraction_time = formatter.stop_timing(Data_extraction)
+        log_message(logger, "Data Extraction and score computation", level="INFO", elapsed_time=data_extraction_time)
         # print("key_aggregated_scores --->>>> ", key_aggregated_scores)
+        
+        ex_post_processing = "Extraction Post Processing"
+        formatter.start_timing(ex_post_processing)
         donut_out = convert_predictions_to_df(prediction)
         
         # This is just converting the dataframe to dictionary
@@ -357,7 +369,7 @@ def run_ada_pipeline(image_path: str):
         data_list = json.loads(json_data)
         output_dict_donut = {}
         
-        print("data_list ---->>>>", data_list)
+        # print("data_list ---->>>>", data_list)
 
         # Iterate through the data_list
         for item in data_list:
@@ -374,12 +386,22 @@ def run_ada_pipeline(image_path: str):
                 output_dict_donut[key] = [{'value': value}]
 
         print("Length of Keys being outputed", len(output_dict_donut.keys()))
+        
         # This is just doing the ROI inference and converting DF to dict
+        data_ex_pp_time = formatter.stop_timing(ex_post_processing)
+        log_message(logger, "Data Extraction post-processing", level="INFO", elapsed_time=data_ex_pp_time)
+
+        ROI_extraction = "ROI_extraction"
+        formatter.start_timing(ROI_extraction)   
         res = roi_model_inference(image_path, image)
         df_dict = res.to_dict(orient='records')
+        ROI_time = formatter.stop_timing(ROI_extraction)
+        log_message(logger, "ROI_extraction Completed", level="INFO", elapsed_time=ROI_time)
 
         # Now we just want that the classname should be the key and the values are the coordinates so 
         # output_dict_det has the class_name : x0 x1 y0 y1
+        mapping_roi_donut = "Mappping Data Extraction and ROI"
+        formatter.start_timing(mapping_roi_donut)   
         output_dict_det = {}
         for item in df_dict:
             class_name = item['class_name']
@@ -391,6 +413,9 @@ def run_ada_pipeline(image_path: str):
         result_dict_1 = map_result1(output_dict_det, BBOX_DONUT_Mapping_Dict)
         # result_dict_2 = map_result2(output_dict_det, BBOX_DONUT_Mapping_Dict)
         final_mapping_dict  = map_result1_final_output(result_dict_1, output_dict_donut, key_aggregated_scores)
+        
+        Data_ex_roi_time = formatter.stop_timing(mapping_roi_donut)
+        log_message(logger, "Mapping extracted data and ROI", level="INFO", elapsed_time=Data_ex_roi_time)
 
         return {"result": final_mapping_dict}, None
     except Exception as e:
