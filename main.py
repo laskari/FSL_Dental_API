@@ -6,10 +6,6 @@ from fastapi.responses import PlainTextResponse, HTMLResponse
 app = FastAPI()
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
-# Path to the log file
-LOG_FILE_PATH = r"D:\project\FSL\new_codebase\FSL_Dental_API\logs\ada_logs.log"
-
-
 # Log file paths for different services
 log_files = {
     "service1": r"D:\project\FSL\new_codebase\FSL_Dental_API\logs\ada_logs.log",
