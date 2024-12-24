@@ -42,7 +42,7 @@ async def ml_extraction(data: dict):
         log_message(logger, f"File found: {image_file_path}. Running pipeline...", level="INFO")
 
         # Run the pipeline and capture result and error
-        result, error = run_ada_pipeline(image_file_path, logger, formatter)
+        result, error = run_ada_pipeline(file_name = image_file_path, logger = logger, formatter = formatter)
 
         if error:
             # Log the error before raising HTTPException
@@ -65,6 +65,51 @@ async def ml_extraction(data: dict):
             status_code=500,
             content=f"Error while processing Extraction {e}"
         )
+    
+@app.post("/ada_extraction_streaming")
+async def ml_extraction(file: UploadFile = File(...)):
+    try:
+        # Log start of the extraction
+        XELP_process_request = 'XELP_process_request'
+        formatter.start_timing(XELP_process_request)
+
+        log_message(logger, "Started ml_extraction", level="INFO")
+        # Get the image path from the payload
+        # image_file_path = data.get('FilePath')
+
+        # Read the contents of the uploaded file
+        contents = await file.read()
+
+        # Get file name
+        file_name = file.filename
+        
+        log_message(logger, f"Running pipeline...", level="INFO")
+
+        # Run the pipeline and capture result and error
+        result, error = run_ada_pipeline(content = contents, logger = logger, formatter = formatter)
+
+        if error:
+            # Log the error before raising HTTPException
+            log_message(logger, f"Error in pipeline: {error}", level="ERROR")
+            raise HTTPException(status_code=500, detail=error)
+
+        # log_message(logger, "Pipeline ran successfully", level="INFO")
+        # If there's no error, return the result with file path
+        response_data = {"version": VERSION, "file_name": file_name, "result": result['result']}
+        
+        # log_message(logger, f"Extraction result: {response_data}", level="INFO")
+        overall_elapsed_time = formatter.stop_timing(XELP_process_request)
+
+        log_message(logger, f"The pipeline process completed with Data extraction and ROI prediction", level="DEBUG", elapsed_time=overall_elapsed_time)
+        return JSONResponse(content=response_data)
+
+    except Exception as e:
+        log_message(logger, f"Error occurred: {e}", level="ERROR")
+        return JSONResponse(
+            status_code=500,
+            content=f"Error while processing Extraction {e}"
+        )
+
 
 if __name__ == '__main__':
     port = int(sys.argv[1]) if  len(sys.argv) > 1 else 8000

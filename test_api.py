@@ -17,7 +17,6 @@ try:
 
     # Measure the total time taken for execution
     total_time_taken = time.time() - start_time
-    print(f"Total time taken for execution: {total_time_taken}")
 
     # Check if the request was successful (status code 200)
     if response.status_code == 200:
@@ -25,11 +24,8 @@ try:
         response_data = response.json()
         print("Response:", response_data)
         print("Request was successful.")
+        print(f"Total time taken for execution: {total_time_taken}")
 
-        with open(fr"""2027C43AD010_001.json""", "w") as json_file:
-            import json
-            json.dump(response_data, json_file, indent=4)  # indent=4 makes the JSON file human-readable
-            print("Response saved to 'response.json'")
 
     else:
         # If request was not successful, print error message
@@ -40,19 +36,18 @@ except Exception as e:
 
 # import requests
 
-# # Define the URL where the endpoint is hosted
-# url = "http://localhost:8080/ada_extraction"
+# Define the URL where the endpoint is hosted
+url = "http://localhost:8000/ada_extraction_streaming"
 
-# # Path to the file you want to upload
-# file_path = r"D:\project\FSL\FSL_codebase\api\ADA\images\2027C43AD001_001.jpg"
+# Path to the file you want to upload
 
-# # Open the file in binary mode
-# with open(file_path, "rb") as file:
-#     # Prepare the file to be uploaded
-#     files = {"file": file}
+# Open the file in binary mode
+with open(data['FilePath'], "rb") as file:
+    # Prepare the file to be uploaded
+    files = {"file": file}
 
-#     # Send the POST request with the file
-#     response = requests.post(url, files=files)
+    # Send the POST request with the file
+    response = requests.post(url, files=files)
 
-# # Print the response
-# print(response.json())
+# Print the response
+print(response.json())

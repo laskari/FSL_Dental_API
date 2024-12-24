@@ -72,7 +72,7 @@
         // Function to fetch logs from API
         async function fetchLogs(serviceName) {
             try {
-                const response = await fetch(`http://localhost:5001/read-error-log?service=${serviceName}`);
+                const response = await fetch(`http://localhost:5002/read-error-log?service=${serviceName}`);
                 if (response.ok) {
                     const data = await response.text();
                     logs = data.split("\n"); // Split logs into lines

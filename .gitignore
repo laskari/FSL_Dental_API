@@ -163,3 +163,4 @@ artifacts/
 images/
 api/ADA/logs
 *.json
+logs/*

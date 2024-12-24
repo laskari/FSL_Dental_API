@@ -81,7 +81,7 @@ class DentalRoiPredictor:
             predictions = self.model(image_tensor)
         return predictions
 
-    def predict_and_get_dataframe(self, image_path, image,  iou_thresh=0.5):
+    def predict_and_get_dataframe(self, image,  iou_thresh=0.5):
         predictions = self.predict_image(image)
         pred = predictions[0]
         pred_nms = self._apply_nms(pred, iou_thresh=iou_thresh)
@@ -99,11 +99,11 @@ class DentalRoiPredictor:
         class_names = [self.category_mapping[label_id] for label_id in labels_flat]
         num_predictions = len(boxes_flat)
         # file_name = [image_path] * num_predictions
-        file_name = [image_path.split(".")[0]] * num_predictions
+        # file_name = [image_path.split(".")[0]] * num_predictions
 
 
         infer_df = pd.DataFrame({
-            'file_name': file_name,
+            # 'file_name': file_name,
             'x0': boxes_flat[:, 0],
             'y0': boxes_flat[:, 1],
             'x1': boxes_flat[:, 2],
@@ -120,8 +120,8 @@ class DentalRoiPredictor:
 frcnn_predictor = DentalRoiPredictor(MODEL_PATH)
 
 
-def roi_model_inference(image_path, image):
-    result_df = frcnn_predictor.predict_and_get_dataframe(image_path, image)
+def roi_model_inference(image):
+    result_df = frcnn_predictor.predict_and_get_dataframe(image)
     max_score_indices = result_df.groupby('class_name')['score'].idxmax()
     result_df = result_df.loc[max_score_indices]
     return result_df
@@ -337,14 +337,22 @@ processor, model = load_model(device)
 
 
 
-def run_ada_pipeline(image_path: str, logger, formatter):
+def run_ada_pipeline(content: bytes = None, file_name: str = None, logger = None, formatter = None):
     try:
+
+        if not content and not file_name:
+            raise ValueError("Either content (image bytes) or file_name must be provided.")
+        
+        # Load content from file_name if not provided
+        if not content and file_name:
+            with open(file_name, "rb") as f:
+                content = f.read()
         # image_path = os.path.join(input_image_folder, each_image)
         image_reading = "Image_reading"
         formatter.start_timing(image_reading)
         # log_message(logger, "Image_reading Started", level="INFO")
-        pil_image = Image.open(image_path).convert('RGB')
-        # pil_image = Image.open(io.BytesIO(image_path)).convert('RGB')
+        # pil_image = Image.open(image_path).convert('RGB')
+        pil_image = Image.open(io.BytesIO(content)).convert('RGB')
         to_tensor = transforms.ToTensor()
         image = to_tensor(pil_image)
         im_read_time = formatter.stop_timing(image_reading)
@@ -393,7 +401,7 @@ def run_ada_pipeline(image_path: str, logger, formatter):
 
         ROI_extraction = "ROI_extraction"
         formatter.start_timing(ROI_extraction)   
-        res = roi_model_inference(image_path, image)
+        res = roi_model_inference(image)
         df_dict = res.to_dict(orient='records')
         ROI_time = formatter.stop_timing(ROI_extraction)
         log_message(logger, "ROI_extraction Completed", level="INFO", elapsed_time=ROI_time)
