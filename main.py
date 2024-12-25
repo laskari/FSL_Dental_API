@@ -14,9 +14,32 @@ log_dirs = {
     "service2": r"D:\project\FSL\new_codebase\FSL_HCFA_API\logs",
     "service3": r"D:\project\FSL\new_codebase\FSL_UB_API\logs",
 }
+# def get_latest_log_file(service: str):
+#     """
+#     Get the latest log file for the given service.
+    
+#     :param service: The name of the service
+#     :return: The path to the latest log file, or None if no log files are found
+#     """
+#     log_dir = log_dirs.get(service)
+#     if not log_dir:
+#         return None
+
+#     # Search for log files in the directory
+#     log_files = glob.glob(os.path.join(log_dir, "*.log*"))
+#     if not log_files:
+#         return None
+
+#     # Sort files by modification time (latest first)
+#     log_files.sort(key=os.path.getmtime, reverse=True)
+
+#     # Return the latest log file
+#     return log_files[0]
+
+
 def get_latest_log_file(service: str):
     """
-    Get the latest log file for the given service.
+    Get the latest log file for the given service, considering only log files with numerical characters in the name.
     
     :param service: The name of the service
     :return: The path to the latest log file, or None if no log files are found
@@ -30,11 +53,18 @@ def get_latest_log_file(service: str):
     if not log_files:
         return None
 
-    # Sort files by modification time (latest first)
-    log_files.sort(key=os.path.getmtime, reverse=True)
+    # Filter log files to only include those with numerical characters in the filename
+    log_files_with_numbers = [file for file in log_files if any(char.isdigit() for char in os.path.basename(file))]
+
+    # If no log files with numbers are found, return None
+    if not log_files_with_numbers:
+        return None
+
+    # Sort the filtered files by modification time (latest first)
+    log_files_with_numbers.sort(key=os.path.getmtime, reverse=True)
 
     # Return the latest log file
-    return log_files[0]
+    return log_files_with_numbers[0]
 
 # Optional: Redirect root to the frontend HTML
 @app.get("/", response_class=HTMLResponse)
