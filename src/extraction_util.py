@@ -166,8 +166,8 @@ def split_and_expand(row):
 
 def load_model(device):
     try:
-        processor = AutoProcessor.from_pretrained("Laskari-Naveen/ADA_II_Oct")
-        model = VisionEncoderDecoderModel.from_pretrained("Laskari-Naveen/ADA_II_Oct")
+        processor = AutoProcessor.from_pretrained("Laskari-Naveen/Dental_Feb_I", cache_dir='/Data/FSL_prod_codebase/Models')
+        model = VisionEncoderDecoderModel.from_pretrained("Laskari-Naveen/Dental_Feb_I", cache_dir='/Data/FSL_prod_codebase/Models')
         model.eval().to(device)
         print("Model loaded successfully")
     except:
