@@ -9,7 +9,7 @@ LOGFILE_DIR = os.path.join(ROOT, LOG_DIR, LOG_FILE)
 
 CATEGORY_MAPPING_PATH = os.path.join(ROOT, artifact_path, 'notes.json')
 
-MODEL_PATH = os.path.join(ROOT, artifact_path, 'ada__88.pth')
+model_path = os.path.join(ROOT, artifact_path, 'ada__88.pth')
 
 ADA_FORM_KEY_MAPPING = os.path.join(ROOT, artifact_path,"FSL_Forms_Keys.xlsx")
 
