@@ -11,7 +11,7 @@ import json, os
 from src.extraction_util import run_ada_pipeline
 from src.logger import log_message, setup_logger
 from config import *
-
+from utils import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger, formatter = setup_logger(LOGFILE_DIR)
 app = FastAPI()
